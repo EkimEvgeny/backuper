@@ -11,7 +11,6 @@ import {EventEmitter} from 'events';
 import { FileManagerService } from "../../file-manager/services/file-manager.service";
 import { FileBackup } from "../../file-manager/dto/fileBackup.dto";
 
-
 /**
  * Класс для работы с ЯндексДиск
  */
