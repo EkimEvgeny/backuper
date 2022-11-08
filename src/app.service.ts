@@ -2,72 +2,70 @@ import { Injectable } from "@nestjs/common";
 import { ZipInputStreamService } from "./zip-input-stream/services/zip-input-stream.service";
 import { YandexDiskService } from "./yandex-disk/services/yandex-disk.service";
 import { FileManagerService } from "./file-manager/services/file-manager.service";
-
 import * as fs from "fs";
-import * as path from "path";
 import * as JSZip from "jszip";
+import { DatabaseManagerService } from "./database-manager/service/database-manager.service";
 
 /**
  * Основной сервис для работы с другими сервисами
  */
 @Injectable()
 export class AppService {
-
-  differenceTIme: number = 1;
-  private obj: any;
-
+  /**
+   * Миллисекунды через которые запуститься первый бэкап
+   * Поумолчанию стоит единица, но с помощью метода lastDateBackupDifference число инициализируется с момента последнего бекапа если условие верно
+   */
+  firstBackupDelay: number = 1;
+  private configData: any;
 
   constructor(private zipService: ZipInputStreamService,
               private yandexService: YandexDiskService,
-              private fileService: FileManagerService) {
+              private fileService: FileManagerService,
+              private databaseService: DatabaseManagerService) {
   }
-
 
   /**
    * Основной метод откуда запускается приложение
    */
   async init() {
 
-    const data = fs.readFileSync("E:/node.js/Dev/creator-backup-copies/config-application.json", "utf8");
-    this.obj = JSON.parse(data);
+    const configDataJson = fs.readFileSync("config-application.json", "utf8");
+    this.configData = JSON.parse(configDataJson);
 
-
-    const pathsFileForArchive = this.obj["pathFileOrFolderForArchive"];
-    const logFile = this.obj["logFile"];
-
+    const filePathsForArchive = this.configData["pathFileOrFolderForArchive"];
+    const logFilePath = this.configData["logFilePath"];
 
     const allFilesTmpDir = await this.yandexService.getAllFilesTmpDir();
     for (const fileBackup of allFilesTmpDir) {
       this.fileService.deleteFile(fileBackup.pathFile);
     }
 
-    this.fileService.createFileLog(logFile);
-    this.differenceTIme = this.fileService.lastDateBackupDifference(logFile, this.numberOfTimes());
+    this.fileService.createFileLog(logFilePath);
+    this.firstBackupDelay = this.fileService.lastDateBackupDifference(logFilePath, this.getNumberOfTimes());
 
     const zip = new JSZip();
 
     setTimeout(async () => {
-      await this.fileOperations(pathsFileForArchive, zip);
+      await this.createFullBackup(filePathsForArchive, zip);
 
       setInterval(async () => {
-        await this.fileOperations(pathsFileForArchive, zip);
-      }, this.numberOfTimes());
-    }, 2);
+        await this.createFullBackup(filePathsForArchive, zip);
+      }, this.getNumberOfTimes());
+    }, this.firstBackupDelay);
 
   }
 
   /**
    * Метод для архивации,отправки на ЯндексДиск и удаления файлов.
-   * Создан чтобы убрать дублирования кода
-   * @param pathsFileForArchive
+   * @param filePathsForArchive
    * @param zip
    * @private
    */
-  private async fileOperations(pathsFileForArchive, zip) {
-    for (const backupData of pathsFileForArchive) {
+  private async createFullBackup(filePathsForArchive, zip) {
+    for (const backupData of filePathsForArchive) {
       await this.zipService.archiveFilesAndFolders(backupData["paths"], backupData["backupName"], zip);
     }
-    await this.zipService.backupDataBase();
+    await this.databaseService.backupDataBase();
     const uploadYandexDiskPromise = await this.yandexService.uploadYandexDisk();
 
     const allFilesTmpDir = await this.yandexService.getAllFilesTmpDir();
@@ -77,18 +75,17 @@ export class AppService {
   }
 
   /**
-   * Получить частоту получения бэкапов
+   * Получить частоту создание бэкапов
    */
-  numberOfTimes(): number {
-    let times = this.obj["backup_frequency"];
+  getNumberOfTimes(): number {
+    let times = this.configData["backupFrequency"];
     if (times < 1 || times > 24) {
       times = 1;
     }
 
-    const number = 86400000 / this.obj["backup_frequency"];
+    const getNumberOfTimesPerDay = 60 * 60 * 24 * 1000 / times;
 
-    const s = number.toFixed(0);
-    return Number(s); //число 3600000 мс в часе
+    return Number(getNumberOfTimesPerDay.toFixed(0));
   }
 }
 

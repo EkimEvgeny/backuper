@@ -1,17 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import * as fs from "fs";
-
-import { request } from "https";
 import { parse } from "url";
-
+import * as path from "path";
+import { request } from "https";
 import { meta, resources, upload } from "ya-disk";
 import * as dayjs from "dayjs";
-import { FileManagerService } from "../../file-manager/services/file-manager.service";
-import * as path from "path";
 import { createReadStream } from "fs";
-
-import {EventEmitter} from 'events';
 import {waitFor} from 'wait-for-event';
+import {EventEmitter} from 'events';
+import { FileManagerService } from "../../file-manager/services/file-manager.service";
 import { FileBackup } from "../../file-manager/dto/fileBackup.dto";
 
 
@@ -21,11 +18,8 @@ import { FileBackup } from "../../file-manager/dto/fileBackup.dto";
 @Injectable()
 export class YandexDiskService {
 
-
-
   constructor(private fileService: FileManagerService) {
   }
-
 
   /**
    * Название папки которая будет создана на ЯндексДиске и ей будет присвоено название "даты и времени".
@@ -35,14 +29,13 @@ export class YandexDiskService {
   private folder: string = "default";
 
   /**
-   * Метод проверяет существует ли папка на ЯндексДиске
+   * Метод проверяет существует ли папка с текущей датой на ЯндексДиске
    */
   async isFolderYandexDisk(): Promise<boolean> {
     try {
-      let data = fs.readFileSync('E:/node.js/Dev/creator-backup-copies/config-application.json', 'utf8');
-      const configApplication = JSON.parse(data);
-      let tokenYandexDisk = configApplication['tokenYandexDisk']
-      const directoryTMPPath = configApplication[`directoryTMPPath`]
+      let configDataJson = fs.readFileSync('config-application.json', 'utf8');
+      const configData = JSON.parse(configDataJson);
+      let tokenYandexDisk = configData['tokenYandexDisk']
       await meta.get(tokenYandexDisk, this.folder);
     } catch (error) {
       return false;
@@ -56,9 +49,9 @@ export class YandexDiskService {
    */
   private async createFolderYandexDisk(): Promise<boolean> {
     try {
-      let data = fs.readFileSync('E:/node.js/Dev/creator-backup-copies/config-application.json', 'utf8');
-      const configApplication = JSON.parse(data);
-      let tokenYandexDisk = configApplication['tokenYandexDisk']
+      let configDataJson = fs.readFileSync('config-application.json', 'utf8');
+      const configData = JSON.parse(configDataJson);
+      let tokenYandexDisk = configData['tokenYandexDisk']
       await resources.create(tokenYandexDisk, `disk:/${this.folder}`);
     } catch (error) {
       return false;
@@ -80,9 +73,9 @@ export class YandexDiskService {
     const emitter = new EventEmitter();
 
     try {
-      let data = fs.readFileSync('E:/node.js/Dev/creator-backup-copies/config-application.json', 'utf8');
-      const configApplication = JSON.parse(data);
-      let tokenYandexDisk = configApplication['tokenYandexDisk']
+      let configDataJson = fs.readFileSync('config-application.json', 'utf8');
+      const configData = JSON.parse(configDataJson);
+      let tokenYandexDisk = configData['tokenYandexDisk']
       const { href, method } = await upload.link(tokenYandexDisk, remotePath, true);
 
 
@@ -110,9 +103,9 @@ export class YandexDiskService {
    * Медор использует Множество действий (Создание папки и отправку файла)
    */
   async uploadYandexDisk() {
-    let data = fs.readFileSync('E:/node.js/Dev/creator-backup-copies/config-application.json', 'utf8');
-    const configApplication = JSON.parse(data);
-    const logFile = configApplication['logFile']
+    let configDataJson = fs.readFileSync('config-application.json', 'utf8');
+    const configData = JSON.parse(configDataJson);
+    const logFilePath = configData['logFilePath']
     this.folder = dayjs().format("YYYY-MM-DD HH:mm");
 
     const isFolder = await this.isFolderYandexDisk();
@@ -130,24 +123,24 @@ export class YandexDiskService {
 
       await this.uploadToFolderYandexDisk(nameFileOnYaDisk, remotePath, fileToUpload);
     }
-    this.fileService.writeFileLog(logFile);
+    this.fileService.writeFileLog(logFilePath);
   }
 
   /**
    * Получить все файлы из папки для временых файлов
    */
   async getAllFilesTmpDir():Promise<FileBackup[]> {
-    let data = fs.readFileSync('E:/node.js/Dev/creator-backup-copies/config-application.json', 'utf8');
-    const configApplication = JSON.parse(data);
-    const directoryTMPPath = configApplication[`directoryTMPPath`]
+    let configDataJson = fs.readFileSync('config-application.json', 'utf8');
+    const configData = JSON.parse(configDataJson);
+    const tempDirectoryPath = configData[`tempDirectoryPath`]
 
     let result:FileBackup[] = [];
 
-    const files = fs.readdirSync(directoryTMPPath);
+    const files = fs.readdirSync(tempDirectoryPath);
     //listing all files using forEach
     for (const fileName of files) {
       // Do whatever you want to do with the file
-      const filePath = path.join(directoryTMPPath, fileName);
+      const filePath = path.join(tempDirectoryPath, fileName);
       const fileBackup = new FileBackup(fileName,filePath );
 
       result.push(fileBackup)

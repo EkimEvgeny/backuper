@@ -5,11 +5,17 @@ import { YandexDiskModule } from "./yandex-disk/yandex-disk.module";
 import { YandexDiskService } from "./yandex-disk/services/yandex-disk.service";
 import { FileManagerModule } from './file-manager/file-manager.module';
 import { FileManagerService } from "./file-manager/services/file-manager.service";
+import { DatabaseManagerModule } from './database-manager/database-manager.module';
+import { DatabaseManagerService } from "./database-manager/service/database-manager.service";
 
+
+/**
+ * Основной модуль для работы совсеми классами
+ */
 @Module({
-  imports: [ZipInputStreamModule, YandexDiskModule, FileManagerModule],
+  imports: [ZipInputStreamModule, YandexDiskModule, FileManagerModule, DatabaseManagerModule],
   controllers: [],
-  providers: [AppService, YandexDiskService, FileManagerService],
+  providers: [AppService, YandexDiskService, FileManagerService,DatabaseManagerService],
 })
 export class AppModule {
     constructor(private appService: AppService) {

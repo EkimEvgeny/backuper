@@ -6,23 +6,17 @@
     "address": "127.0.0.1",
     "port": "5432",
     "pathPgDump": "C:/Program Files/PostgreSQL/14/bin/pg_dump.exe",
-    "pathSaveDatabase": "E:/node.js/Dev/creator-backup-copies/src/tmp/DataBaseBackup",
-    "databaseSaveToTmp": "E:/node.js/Dev/creator-backup-copies/src/tmp/BackupDataBase.backup"
+    "databaseSaveToTmp": "E:/node.js/Dev/backuper/src/tmp/BackupDataBase.backup"
   },
   "pathFileOrFolderForArchive": [
     {
-      "backupName": "E:/node.js/Dev/creator-backup-copies/src/tmp/backup1.zip",
-      "paths": ["E:/node.js/Dev/creator-backup-copies/TestProjectForArchive"]
-    },
-    {
-      "backupName": "E:/node.js/Dev/creator-backup-copies/src/tmp/backup2.zip",
-      "paths": ["E:/node.js/Dev/creator-backup-copies/TestPROKKKKK",
-        "E:/node.js/Dev/creator-backup-copies/TestPROJ"]
+      "backupName": "E:/node.js/Dev/backuper/src/tmp/backup1.zip",
+      "paths": ["E:/TestZipArchiveToYandex"]
     }
   ],
-  "logFile" : "./lastDateBackupLog.txt",
+  "logFilePath" : "lastDateBackupLog.txt",
   "tokenYandexDisk" : "y0_AgAAAAAidqsRAADLWwAAAADSQp5CFprCXZfzTFWiPX8xWFp5C6N-AcA",
 
-  "backup_frequency" : 23,
-  "directoryTMPPath" : "E:/node.js/Dev/creator-backup-copies/src/tmp"
+  "backupFrequency" : 24,
+  "tempDirectoryPath" : "E:/node.js/Dev/backuper/src/tmp"
 }

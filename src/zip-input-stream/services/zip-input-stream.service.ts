@@ -3,37 +3,11 @@ import * as JSZip from "jszip";
 import * as fs from "fs";
 import * as path from "path";
 
-
+/**
+ * Сервис для работы архивации папок и файлов
+ */
 @Injectable()
 export class ZipInputStreamService {
-
-  /**
-   * Создаёт бэкап базы данных postgres
-   */
-  async backupDataBase(){
-    const { exec } = require('child_process');
-
-    const data = fs.readFileSync('E:/node.js/Dev/creator-backup-copies/config-application.json', 'utf8');
-    const configFile = JSON.parse(data);
-    const configPgDump = configFile['dumpDatabase']
-    const pathPgDump = configPgDump['pathPgDump']
-    const username = configPgDump['username']
-    const password = configPgDump['password']
-    const address = configPgDump['address']
-    const port = configPgDump['port']
-    const database = configPgDump['database']
-    const databaseSaveToTmp = configPgDump['databaseSaveToTmp']
-
-
-    const command = `\"${pathPgDump}\" -F c -d postgres://${username}:${password}@${address}:${port}/${database} > ${databaseSaveToTmp}`
-    let yourscript = exec(command,
-      (error, stdout, stderr) => {
-        if (error !== null) {
-          console.log(`exec error: ${error}`);
-        }
-      });
-  }
-
 
   /**
    * Записывает в zip файл
