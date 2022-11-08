@@ -41,7 +41,7 @@ export class AppService {
     }
 
     this.fileService.createFileLog(logFilePath);
-    this.firstBackupDelay = this.fileService.lastDateBackupDifference(logFilePath, this.getTimeRepeatBackup());
+    this.firstBackupDelay = this.fileService.lastDateBackupDifference(logFilePath, this.getMillisecondsBetweenBackups());
 
     const zip = new JSZip();
 
@@ -50,7 +50,7 @@ export class AppService {
 
       setInterval(async () => {
         await this.createFullBackup(filePathsForArchive, zip);
-      }, this.getTimeRepeatBackup());
+      }, this.getMillisecondsBetweenBackups());
     }, this.firstBackupDelay);
 
   }
@@ -77,7 +77,7 @@ export class AppService {
   /**
    * Получить частоту создание бэкапов
    */
-  getTimeRepeatBackup(): number {
+  getMillisecondsBetweenBackups(): number {
     let times = this.configData["backupFrequency"];
     if (times < 1 || times > 24) {
       times = 1;
