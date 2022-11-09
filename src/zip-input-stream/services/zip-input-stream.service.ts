@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import * as JSZip from "jszip";
 import * as fs from "fs";
 import * as path from "path";
@@ -8,16 +8,21 @@ import * as path from "path";
  */
 @Injectable()
 export class ZipInputStreamService {
+  /**
+   * Поле класса хранит в себе информацию об ошибках в приложении
+   * @private
+   */
+  private readonly logger = new Logger(ZipInputStreamService.name);
 
   /**
    * Записывает в zip файл
    * @param filePath
    * @param content
    */
-  async writeToZip(filePath:string, content ){
-    await fs.writeFile(filePath, Buffer.from(content), function (err) {
+  async writeToZip(filePath: string, content) {
+    await fs.writeFile(filePath, Buffer.from(content), function(err) {
       if (err) {
-        throw(err);
+        this.logger.error(`Method writeToZip(): ${err}`);
       } else {
         return (content);
       }
@@ -31,7 +36,7 @@ export class ZipInputStreamService {
    * @param currentPath
    * @private
    */
-  private async archiveDirectory(directoryPath: string, jsZip: JSZip, currentPath: string){
+  private async archiveDirectory(directoryPath: string, jsZip: JSZip, currentPath: string) {
     const files = fs.readdirSync(directoryPath);
     //listing all files using forEach
     for (const fileName of files) {
@@ -39,14 +44,15 @@ export class ZipInputStreamService {
 
       const filePath = path.join(directoryPath, fileName);
 
-      const stats = fs.statSync( filePath)
-      if(stats.isFile()){
-        jsZip.file(path.join(currentPath, fileName) , await fs.readFileSync(path.join(directoryPath, fileName)));
+      const stats = fs.statSync(filePath);
+      if (stats.isFile()) {
+        jsZip.file(path.join(currentPath, fileName), await fs.readFileSync(path.join(directoryPath, fileName)));
       }
-      if(stats.isDirectory()){
-        await this.archiveDirectory(path.join(directoryPath, fileName), jsZip, path.join(currentPath, fileName))
+      if (stats.isDirectory()) {
+        await this.archiveDirectory(path.join(directoryPath, fileName), jsZip, path.join(currentPath, fileName));
       }
-    };
+    }
+    ;
   }
 
   /**

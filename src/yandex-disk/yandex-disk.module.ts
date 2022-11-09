@@ -1,7 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "../config/config.module";
 
 /**
  * Модуль для работы с классами YandexDisk
  */
-@Module({})
+@Module({
+  imports: [ConfigModule]
+})
 export class YandexDiskModule {}

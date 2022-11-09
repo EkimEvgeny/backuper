@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from "@nestjs/common";
 import * as fs from "fs";
 import * as dayjs from "dayjs";
 import { Dayjs } from "dayjs";
@@ -8,6 +8,11 @@ import { Dayjs } from "dayjs";
  */
 @Injectable()
 export class FileManagerService {
+  /**
+   * Поле класса хранит в себе информацию об ошибках в приложении
+   * @private
+   */
+  private readonly logger = new Logger(FileManagerService.name);
 
   /**
    * Создать файл, если создан то проигнарировать
@@ -17,7 +22,7 @@ export class FileManagerService {
     fs.readFile(path,"utf8",(err, data) => {
       if(!data){
         fs.open(path, 'w', (error) => {
-          if(error) throw error;
+          if(error) this.logger.error(`Method createFileLog(): ${err}`);
         });
       }
     });
@@ -29,7 +34,7 @@ export class FileManagerService {
    */
   writeFileLog(path:string){
     fs.writeFile(path, dayjs().format('YYYY-MM-DD HH:mm'), (err) => {
-      if(err) throw err;
+      if(err) this.logger.error(`Method writeFileLog(): ${err}`);
     });
   }
 
@@ -58,8 +63,7 @@ export class FileManagerService {
    */
   deleteFile(path:string){
     fs.unlink(path, (err) => {
-      if(err) throw err;
-
+      if(err) this.logger.error(`Method deleteFile(): ${err}`);
     });
   }
 

@@ -7,13 +7,14 @@ import { FileManagerModule } from './file-manager/file-manager.module';
 import { FileManagerService } from "./file-manager/services/file-manager.service";
 import { DatabaseManagerModule } from './database-manager/database-manager.module';
 import { DatabaseManagerService } from "./database-manager/service/database-manager.service";
+import { ConfigModule } from './config/config.module';
 
 
 /**
  * Основной модуль для работы совсеми классами
  */
 @Module({
-  imports: [ZipInputStreamModule, YandexDiskModule, FileManagerModule, DatabaseManagerModule],
+  imports: [ZipInputStreamModule, YandexDiskModule, FileManagerModule, DatabaseManagerModule, ConfigModule],
   controllers: [],
   providers: [AppService, YandexDiskService, FileManagerService,DatabaseManagerService],
 })
