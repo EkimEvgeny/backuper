@@ -1,0 +1,22 @@
+{
+  "dumpDatabase": {
+    "username": "postgres",
+    "database": "technology-registry",
+    "password": "1qa2ws3ed",
+    "address": "127.0.0.1",
+    "port": "5432",
+    "pathPgDump": "C:/Program Files/PostgreSQL/14/bin/pg_dump.exe",
+    "databaseSaveToTmp": "E:/node.js/Dev/backuper/src/tmp/BackupDataBase.backup"
+  },
+  "pathFileOrFolderForArchive": [
+    {
+      "backupName": "E:/node.js/Dev/backuper/src/tmp/backup1.zip",
+      "paths": ["E:/TestZipArchiveToYandex"]
+    }
+  ],
+  "logFilePath" : "lastDateBackupLog.txt",
+  "tokenYandexDisk" : "y0_AgAAAAAidqsRAADLWwAAAADSQp5CFprCXZfzTFWiPX8xWFp5C6N-AcA",
+
+  "backupFrequency" : 24,
+  "tempDirectoryPath" : "E:/node.js/Dev/backuper/src/tmp"
+}
