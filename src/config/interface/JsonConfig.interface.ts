@@ -1,6 +1,8 @@
 /**
  * Сущность конфигурации приложения
  */
+import { StorageTypeEnum } from "../../Enum/StorageType.enum";
+
 export interface JsonConfig {
   /**
    * Поле хранит в себе информацию о конфигурации базы данных
@@ -53,10 +55,6 @@ export interface JsonConfig {
    */
   logFilePath: string;
   /**
-   * Поле хранит в себе информацию о токене личного кабинета ЯндексДиска
-   */
-  tokenYandexDisk: string;
-  /**
    * Поле хранит в себе информацию о том как часто выполнять процедуру бэкапа файлов
    */
   backupFrequency: number;
@@ -64,4 +62,20 @@ export interface JsonConfig {
    * Поле хранит в себе информацию о местоположении папки для временных файлов
    */
   tempDirectoryPath: string;
+
+  storage: [
+    {
+      name: string;
+      type: StorageTypeEnum;
+      priority: number;
+      /**
+       * Поле хранит в себе информацию о токене личного кабинета ЯндексДиска
+       */
+      tokenYandexDisk:string;
+      loginSynology: string;
+      passwordSynology: string;
+      domainSynology: string;
+      portSynology: number;
+    }
+  ]
 }

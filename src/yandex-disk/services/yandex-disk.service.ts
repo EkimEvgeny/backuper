@@ -1,16 +1,14 @@
 import { Injectable, Logger } from "@nestjs/common";
-import * as fs from "fs";
+import { createReadStream } from "fs";
 import { parse } from "url";
 import * as path from "path";
 import { request } from "https";
 import { meta, resources, upload } from "ya-disk";
-import * as dayjs from "dayjs";
-import { createReadStream } from "fs";
 import { waitFor } from "wait-for-event";
 import { EventEmitter } from "events";
 import { FileManagerService } from "../../file-manager/services/file-manager.service";
-import { FileBackup } from "../../file-manager/dto/fileBackup.dto";
 import { ConfigService } from "../../config/service/config.service";
+import * as AsyncLock from "async-lock";
 
 /**
  * Класс для работы с ЯндексДиск
@@ -22,26 +20,22 @@ export class YandexDiskService {
    * @private
    */
   private readonly logger = new Logger(YandexDiskService.name);
+  private doesFileUploading = false;
+  private emitter = new EventEmitter();
+  lock = new AsyncLock({maxPending: 1});
 
   constructor(private fileService: FileManagerService,
               private configService: ConfigService) {
   }
 
   /**
-   * Название папки которая будет создана на ЯндексДиске и ей будет присвоено название "даты и времени".
-   * Поумолчанию умеет значение "default".
-   * @private
-   */
-  private folder: string = "default";
-
-  /**
    * Метод проверяет существует ли папка с текущей датой на ЯндексДиске
    */
-  async isFolderYandexDisk(): Promise<boolean> {
+  async isFolderYandexDisk(nameFolderOnYandexDisk: string): Promise<boolean> {
     try {
-      await meta.get(this.configService.tokenYandexDisk, this.folder);
+      await meta.get(this.configService.tokenYandexDisk, nameFolderOnYandexDisk);
     } catch (error) {
-      this.logger.warn("Method isFolderYandexDisk(): " + error);
+      this.logger.log(`Method isFolderYandexDisk(): ${JSON.stringify(error)}. That's okay. I'll create a folder`);
       return false;
     }
     return true;
@@ -51,13 +45,12 @@ export class YandexDiskService {
    * Создать папку на ЯндексДиске
    * @private
    */
-  private async createFolderYandexDisk(): Promise<boolean> {
+  private async createFolderYandexDisk(nameFolderOnYandexDisk: string): Promise<boolean> {
     try {
-      await resources.create(this.configService.tokenYandexDisk, `disk:/${this.folder}`);
+      await resources.create(this.configService.tokenYandexDisk, `disk:/${nameFolderOnYandexDisk}`);
     } catch (error) {
-      this.logger.error("Method createFolderYandexDisk(): " + error);
+      this.logger.error('Method createFolderYandexDisk(): ${JSON.stringify(error)}');
     }
-
     return true;
   }
 
@@ -68,11 +61,14 @@ export class YandexDiskService {
    * @param fileToUpload
    * @private
    */
-  private async uploadToFolderYandexDisk(nameFIle: string,
-                                         remotePath: string,
-                                         fileToUpload: string) {
-    const emitter = new EventEmitter();
+  private async uploadFileToFolderYandexDisk(nameFIle: string,
+                                             remotePath: string,
+                                             fileToUpload: string) {
+    if (this.doesFileUploading)
+      await waitFor("done", this.emitter);
 
+    this.doesFileUploading = true;
+    this.logger.debug(`Uploading started. File = ${fileToUpload}`);
     try {
       const { href, method } = await upload.link(this.configService.tokenYandexDisk, remotePath, true);
       const fileStream = createReadStream(fileToUpload);
@@ -81,61 +77,49 @@ export class YandexDiskService {
       fileStream.pipe(uploadStream);
       fileStream.on("end", () => {
         uploadStream.end();
-        emitter.emit("done");
+        this.emitter.emit("done");
       })
-        .on("error", () => {
-          this.logger.error(`Can't upload file to yandex.disk`);
-          emitter.emit("done");
+        .on("error", (err) => {
+          this.logger.error(`Can't upload file to yandex.disk ${JSON.stringify(err)}`);
+          this.emitter.emit("done");
         });
 
-      await waitFor("done", emitter);
-
+      await waitFor("done", this.emitter, () => {
+        this.logger.debug(`Uploading ended. File =  ${fileToUpload}`);
+        this.logger.debug(`Start of the deleting. File ${fileToUpload}`);
+        this.fileService.deleteFile(fileToUpload);
+        this.logger.debug(`End of the deleting. File ${fileToUpload}`);
+        this.doesFileUploading = false;
+      });
     } catch (error) {
-      this.logger.error(`Method uploadToFolderYandexDisk(): ${error}`);
+      this.logger.error(`Method uploadToFolderYandexDisk(): ${JSON.stringify(error)}`);
+      this.doesFileUploading = false;
     }
   }
 
   /**
    * Метод использует Множество действий (Создание папки и отправку файла на ЯндексДиск)
    */
-  async uploadYandexDisk() {
-
-    this.folder = dayjs().format("HH mm-DD.MM.YYYY");
-
-    const isFolder = await this.isFolderYandexDisk();
+  async uploadYandexDisk(pathFile: string, nameFolderOnYandexDisk: string) {
+    const isFolder = await this.isFolderYandexDisk(nameFolderOnYandexDisk);
 
     if (!isFolder) {
-      await this.createFolderYandexDisk();
+      await this.createFolderYandexDisk(nameFolderOnYandexDisk);
     }
 
-    for (const backup of await this.getAllFilesTmpDir()) {
-      const timeFileBackup = dayjs().format("HH mm-DD.MM.YYYY");
-      const nameFileOnYaDisk: string = backup.fileName;
-      const editNameFileOnYaDisk = nameFileOnYaDisk.replace(`.`, ` ${timeFileBackup}.`);
-      const fileToUpload = backup.pathFile;
-      const remotePath = `disk:/${this.folder}/${editNameFileOnYaDisk}`;
-
-      await this.uploadToFolderYandexDisk(nameFileOnYaDisk, remotePath, fileToUpload);
+    const isZipFile: boolean = path.extname(pathFile) === ".zip";
+    let nameFileOnYaDisk: string = "";
+    if (isZipFile) {
+      nameFileOnYaDisk = path.basename(pathFile).replace(path.basename(pathFile), nameFolderOnYandexDisk + "__" + path.basename(pathFile));
+    } else {
+      nameFileOnYaDisk = path.basename(pathFile);
     }
-    this.fileService.writeFileLog(this.configService.logFilePath);
+
+    const fileToUpload = pathFile;
+    const remotePath = `disk:/${nameFolderOnYandexDisk}/${nameFileOnYaDisk}`;
+
+   await this.uploadFileToFolderYandexDisk(nameFileOnYaDisk, remotePath, fileToUpload);
+
   }
 
-  /**
-   * Получить все файлы из папки для временых файлов
-   */
-  async getAllFilesTmpDir(): Promise<FileBackup[]> {
-    let result: FileBackup[] = [];
-
-    const files = fs.readdirSync(this.configService.tempDirectoryPath);
-    //listing all files using forEach
-    for (const fileName of files) {
-      // Do whatever you want to do with the file
-      const filePath = path.join(this.configService.tempDirectoryPath, fileName);
-      const fileBackup = new FileBackup(fileName, filePath);
-
-      result.push(fileBackup);
-    }
-
-    return result;
-  }
 }

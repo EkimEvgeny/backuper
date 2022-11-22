@@ -51,14 +51,25 @@ export class ConfigService {
         Joi.object({
           backupName: Joi.string().required(),
           paths: Joi.array().items(
-            Joi.string().required()
+            Joi.string()
           )
         })
       ),
       logFilePath: Joi.string().default("lastDateBackupLog.txt"),
-      tokenYandexDisk: Joi.string().required(),
       backupFrequency: Joi.number().required(),
-      tempDirectoryPath: Joi.string().required()
+      tempDirectoryPath: Joi.string().required(),
+      storage: Joi.array().items(
+        Joi.object({
+          name: Joi.string().required(),
+          type: Joi.string().valid('YandexDisk', 'Synology').required(),
+          priority: Joi.number().integer().min(1).required(),
+          tokenYandexDisk: Joi.string(),
+          loginSynology: Joi.string(),
+          passwordSynology: Joi.string(),
+          domainSynology: Joi.string(),
+          portSynology: Joi.number().default(5000)
+        })
+      )
 
     });
 
@@ -153,7 +164,12 @@ export class ConfigService {
    * Получить токен ЯндексДиск
    */
   get tokenYandexDisk() {
-    return this.jsonConfig.tokenYandexDisk;
+    let result: string = ""
+    this.jsonConfig.storage.forEach((elementStorage)=>{
+      result = elementStorage.tokenYandexDisk
+    })
+
+    return result;
   }
 
 }

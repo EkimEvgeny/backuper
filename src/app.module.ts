@@ -8,14 +8,14 @@ import { FileManagerService } from "./file-manager/services/file-manager.service
 import { DatabaseManagerModule } from './database-manager/database-manager.module';
 import { DatabaseManagerService } from "./database-manager/service/database-manager.service";
 import { ConfigModule } from './config/config.module';
+import { SynologyModule } from './synology/synology.module';
 
 
 /**
  * Основной модуль для работы совсеми классами
  */
 @Module({
-  imports: [ZipInputStreamModule, YandexDiskModule, FileManagerModule, DatabaseManagerModule, ConfigModule],
-  controllers: [],
+  imports: [ZipInputStreamModule, YandexDiskModule, FileManagerModule, DatabaseManagerModule, ConfigModule, SynologyModule],
   providers: [AppService, YandexDiskService, FileManagerService,DatabaseManagerService],
 })
 export class AppModule {

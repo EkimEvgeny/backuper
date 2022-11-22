@@ -10,13 +10,40 @@
   },
   "pathFileOrFolderForArchive": [
     {
-      "backupName": "E:/node.js/Dev/backuper/src/tmp/backup1.zip",
+      "backupName": "backup1.zip",
       "paths": ["E:/TestZipArchiveToYandex"]
+    },
+    {
+      "backupName": "backup2.zip",
+      "paths": ["E:/testNodeJs"]
+    },
+    {
+      "backupName": "backup4.zip",
+      "paths": ["E:/testNodeJs"]
+    },
+    {
+      "backupName": "backup5.zip",
+      "paths": ["E:/TestbigMb"]
+    },
+    {
+      "backupName": "backup6.zip",
+      "paths": ["E:/TestbigMb"]
+    },
+    {
+      "backupName": "backup3.zip",
+      "paths": ["E:/TestbigMb"]
     }
   ],
   "logFilePath" : "lastDateBackupLog.txt",
-  "tokenYandexDisk" : "y0_AgAAAAAidqsRAADLWwAAAADSQp5CFprCXZfzTFWiPX8xWFp5C6N-AcA",
 
   "backupFrequency" : 24,
-  "tempDirectoryPath" : "E:/node.js/Dev/backuper/src/tmp"
+  "tempDirectoryPath" : "E:/node.js/Dev/backuper/src/tmp",
+  "storage": [
+    {
+      "name": "Yandex1",
+      "type": "YandexDisk",
+      "priority": 1,
+      "tokenYandexDisk" : "y0_AgAAAABmQ29AAADLWwAAAADUVqFvSi0Vt_FuTK2R1bPxbv_iDwfYn8M"
+    }
+  ]
 }

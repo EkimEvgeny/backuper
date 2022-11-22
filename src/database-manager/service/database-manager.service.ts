@@ -1,5 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "../../config/service/config.service";
+import * as dayjs from "dayjs";
+import * as path from "path";
+// import { ChildProcess } from "child_process";
+import * as child_process from "child_process";
+import { ChildProcess } from "child_process";
 
 
 /**
@@ -13,14 +18,13 @@ export class DatabaseManagerService {
    */
   private readonly logger = new Logger(DatabaseManagerService.name);
 
-  constructor(private configService:ConfigService) {
-  }
+  constructor(private configService:ConfigService) {}
 
   /**
    * Создаёт бэкап базы данных postgres
    */
-  async backupDataBase(){
-    const { exec } = require('child_process');
+  backupDataBase(nameFolderTmp:string): string{
+    const dayjsNow = dayjs();
 
     const pathPgDump = this.configService.pathPgDump
     const username = this.configService.username
@@ -29,13 +33,16 @@ export class DatabaseManagerService {
     const port = this.configService.port
     const database = this.configService.database
     const databaseSaveToTmp = this.configService.databaseSaveToTmp
+    const nameBackupWithDate = databaseSaveToTmp.replace(".backup",`${dayjsNow.format("(HH_mm)-(DD_MM_YYYY)")}.backup`)
 
-    const command = `\"${pathPgDump}\" -F c -d postgres://${username}:${password}@${address}:${port}/${database} > ${databaseSaveToTmp}`
-    let yourscript = exec(command,
-      (error, stdout, stderr) => {
-        if (error !== null) {
-          this.logger.error(`Method backupDataBase(): ${error}`)
-        }
-      });
+    const pathBackupDataBase = path.join(nameFolderTmp, path.basename(nameBackupWithDate));
+
+    const command = `\"${pathPgDump}\" -F c -d postgres://${username}:${password}@${address}:${port}/${database} > ${pathBackupDataBase}`
+    //todo
+
+      let yourScripts = child_process.execSync(command,{timeout:10*1000})
+
+
+    return pathBackupDataBase
   }
 }

@@ -6,5 +6,6 @@ import { FileManagerService } from "./services/file-manager.service";
  */
 @Module({
   providers: [FileManagerService],
+  exports:[FileManagerService,FileManagerModule]
 })
 export class FileManagerModule {}
