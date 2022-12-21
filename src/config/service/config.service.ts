@@ -1,18 +1,23 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Scope } from "@nestjs/common";
 import * as fs from "fs";
 import * as Joi from "joi";
 import { JsonConfig } from "../interface/JsonConfig.interface";
+import { StorageTypeEnum } from "../../enum/StorageType.enum";
+
 
 /**
  * Сервис для создания и чтения сущности конфигураций
  */
-@Injectable()
+@Injectable({scope: Scope.DEFAULT})
 export class ConfigService {
+
   /**
    * Поле класса хранит в себе информацию о конфигурации приложения из файла конфигурации
    * @private
    */
   private readonly jsonConfig: JsonConfig;
+  private _queryPathFilesOnUpload: string[] = [];
+  private priorityArray = new Set;
   /**
    * Поле класса хранит в себе информацию об ошибках в приложении
    * @private
@@ -61,7 +66,7 @@ export class ConfigService {
       storage: Joi.array().items(
         Joi.object({
           name: Joi.string().required(),
-          type: Joi.string().valid('YandexDisk', 'Synology').required(),
+          type: Joi.string().valid(StorageTypeEnum.Synology, StorageTypeEnum.YandexDisk).required(),
           priority: Joi.number().integer().min(1).required(),
           tokenYandexDisk: Joi.string(),
           loginSynology: Joi.string(),
@@ -70,15 +75,14 @@ export class ConfigService {
           portSynology: Joi.number().default(5000)
         })
       )
-
     });
-
 
     const { error, value: validatedJsonConfig } =
       jsonVarsSchema.validate(jsonConfig);
     if (error) {
       this.logger.error(`Method validateInput(): ${error}`);
     }
+
     return validatedJsonConfig;
   }
 
@@ -132,6 +136,7 @@ export class ConfigService {
   get databaseSaveToTmp() {
     return this.jsonConfig.dumpDatabase.databaseSaveToTmp;
   }
+
   /**
    * Получить массив объекта конфигурации
    */
@@ -164,12 +169,90 @@ export class ConfigService {
    * Получить токен ЯндексДиск
    */
   get tokenYandexDisk() {
-    let result: string = ""
-    this.jsonConfig.storage.forEach((elementStorage)=>{
-      result = elementStorage.tokenYandexDisk
-    })
+    let result: string = "";
+    this.jsonConfig.storage.forEach((elementStorage) => {
+      result = elementStorage.tokenYandexDisk;
+    });
 
     return result;
   }
 
+  /**
+   * Получить список всех хранилищ из файла config-application.json
+   */
+  get allStorage() {
+    return this.jsonConfig.storage;
+  }
+
+  /**
+   * Инициализировать уникальный массив приоритетов
+   */
+  initPriority() {
+    for (const storage of this.jsonConfig.storage) {
+      this.priorityArray.add(storage.priority);
+    }
+  }
+
+  /**
+   * Получить всех приоритеты в отсортированом списке
+   */
+  get allPriority() {
+    return Array.from(this.priorityArray).sort();
+  }
+
+  /**
+   * Получить список всех файлов на очередь загрузки
+   */
+  get queryPathFilesOnUpload(): string[] {
+    return this._queryPathFilesOnUpload;
+  }
+
+  /**
+   * Удалить файл из очереди загрузок
+   * @param pathFile
+   */
+  deleteElementFromQueryPathFilesOnUpload(pathFile: string) {
+    const indexRemoveElement = this.queryPathFilesOnUpload.indexOf(pathFile);
+    if (indexRemoveElement > -1) {
+      this.queryPathFilesOnUpload.splice(indexRemoveElement, 1);
+    }
+  }
+
+  /**
+   * Существует ли файл в очереде на загрузку
+   * @param pathFile
+   */
+  existElementFromQueryPathFilesOnUpload(pathFile: string): boolean {
+    const indexElement = this.queryPathFilesOnUpload.indexOf(pathFile);
+    if (indexElement === -1) {
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Получить первый элемент списка приоритетов
+   */
+  firstInArrayPriority() {
+    return Array.from(this.priorityArray)[0];
+  }
+
+  /**
+   * Удалить первый элемент списка приоритетов
+   */
+  deleteFirstElementArrayPriority():boolean {
+    if(this.priorityArray.size <= 1 ){
+      throw new Error("Закончились новые приоритетные хранилища")
+    }
+    this.priorityArray.delete(this.firstInArrayPriority())
+    return true
+  }
+
+  /**
+   * Добавить файл в список очередей загрузки
+   * @param pathFile
+   */
+  addElementInArrayQueryPathFilesOnUpload(pathFile:string) {
+    this.queryPathFilesOnUpload.push(pathFile)
+  }
 }

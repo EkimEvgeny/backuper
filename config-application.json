@@ -16,22 +16,6 @@
     {
       "backupName": "backup2.zip",
       "paths": ["E:/testNodeJs"]
-    },
-    {
-      "backupName": "backup4.zip",
-      "paths": ["E:/testNodeJs"]
-    },
-    {
-      "backupName": "backup5.zip",
-      "paths": ["E:/TestbigMb"]
-    },
-    {
-      "backupName": "backup6.zip",
-      "paths": ["E:/TestbigMb"]
-    },
-    {
-      "backupName": "backup3.zip",
-      "paths": ["E:/TestbigMb"]
     }
   ],
   "logFilePath" : "lastDateBackupLog.txt",
@@ -43,7 +27,13 @@
       "name": "Yandex1",
       "type": "YandexDisk",
       "priority": 1,
-      "tokenYandexDisk" : "y0_AgAAAABmQ29AAADLWwAAAADUVqFvSi0Vt_FuTK2R1bPxbv_iDwfYn8M"
+      "tokenYandexDisk" : "*"
+    },
+    {
+      "name": "Yandex2",
+      "type": "YandexDisk",
+      "priority": 1,
+      "tokenYandexDisk" : "*"
     }
   ]
 }

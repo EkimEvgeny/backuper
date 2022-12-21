@@ -12,7 +12,8 @@ import { ConfigService } from "../../config/service/config.service";
 export class ZipInputStreamService {
 
   constructor(private yandexDiskService: YandexDiskService,
-              private configService: ConfigService) {}
+              private configService: ConfigService) {
+  }
 
   /**
    * Поле класса хранит в себе информацию об ошибках в приложении
@@ -62,26 +63,31 @@ export class ZipInputStreamService {
    * @param nameArchive
    * @param zip
    */
-  async archiveFilesAndFolders(directoryPaths: string[], nameArchive: string, zip: JSZip, nameFolderTemp: string) {
-    this.logger.debug(`Start of the archiving process. Name archive ${path.basename(nameArchive)} from folder ${nameFolderTemp}`);
-    const pathTmpArchive = path.join(this.configService.tempDirectoryPath,nameFolderTemp, nameArchive);
+  async archiveFilesAndFolders(directoryPaths: string[], nameArchive: string, zip: JSZip, nameFolderTemp: string): Promise<string> {
+    const pathTmpArchive = path.join(this.configService.tempDirectoryPath, nameFolderTemp, nameArchive);
 
-    for (const pathfile of directoryPaths) {
+    if (!(this.configService.existElementFromQueryPathFilesOnUpload(pathTmpArchive))) {
+      this.logger.debug(`Start of the archiving process. Name archive ${path.basename(nameArchive)} from folder ${nameFolderTemp}`);
 
-      const isDir = fs.lstatSync(pathfile).isDirectory();
+      for (const pathfile of directoryPaths) {
 
-      if (isDir) {
-        await this.archiveDirectory(pathfile, zip, "");
-      } else {
-        zip.file(path.join(pathfile), await fs.readFileSync(path.join(pathfile)));
+        const isDir = fs.lstatSync(pathfile).isDirectory();
+
+        if (isDir) {
+          await this.archiveDirectory(pathfile, zip, "");
+        } else {
+          zip.file(path.join(pathfile), await fs.readFileSync(path.join(pathfile)));
+        }
+
+        const content = await zip.generateAsync({ type: "arraybuffer" });
+        this.writeToZip(pathTmpArchive, content);
+
+        this.logger.debug(`End of the archiving process. Name archive ${path.join(nameFolderTemp, nameArchive)}`);
       }
-
-      const content = await zip.generateAsync({ type: "arraybuffer" });
-      this.writeToZip(pathTmpArchive, content);
-      this.logger.debug(`End of the archiving process. Name archive ${path.basename(nameArchive)} from folder ${nameFolderTemp}`);
-
-      await this.yandexDiskService.uploadYandexDisk(pathTmpArchive, nameFolderTemp);
     }
-  }
 
+
+    return pathTmpArchive;
+  }
 }
+

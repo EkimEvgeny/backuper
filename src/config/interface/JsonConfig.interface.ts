@@ -1,8 +1,7 @@
+import { StorageTypeEnum } from "../../enum/StorageType.enum";
 /**
  * Сущность конфигурации приложения
  */
-import { StorageTypeEnum } from "../../Enum/StorageType.enum";
-
 export interface JsonConfig {
   /**
    * Поле хранит в себе информацию о конфигурации базы данных
@@ -62,19 +61,42 @@ export interface JsonConfig {
    * Поле хранит в себе информацию о местоположении папки для временных файлов
    */
   tempDirectoryPath: string;
-
+  /**
+   * Список хранилищ информа
+   */
   storage: [
     {
+      /**
+       * Любое название хранилще
+       */
       name: string;
+      /**
+       * Тип хранилище Яндекс или Synology
+       */
       type: StorageTypeEnum;
+      /**
+       * Приоритет чем ниже число тем выше приоритет
+       */
       priority: number;
       /**
        * Поле хранит в себе информацию о токене личного кабинета ЯндексДиска
        */
-      tokenYandexDisk:string;
+      tokenYandexDisk: string;
+      /**
+       * Логин к хранилищу Synology
+       */
       loginSynology: string;
+      /**
+       * Пароль к хранилищу Synology
+       */
       passwordSynology: string;
+      /**
+       * Адрес к хранилищу Synology
+       */
       domainSynology: string;
+      /**
+       * Порт к хранилищу Synology
+       */
       portSynology: number;
     }
   ]

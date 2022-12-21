@@ -9,12 +9,12 @@ import { EventEmitter } from "events";
 import { FileManagerService } from "../../file-manager/services/file-manager.service";
 import { ConfigService } from "../../config/service/config.service";
 import * as AsyncLock from "async-lock";
-
+import { StorageInterface } from "../../interface/Storage.interface";
 /**
  * Класс для работы с ЯндексДиск
  */
 @Injectable()
-export class YandexDiskService {
+export class YandexDiskService implements StorageInterface {
   /**
    * Поле класса хранит в себе информацию об ошибках в приложении
    * @private
@@ -22,20 +22,15 @@ export class YandexDiskService {
   private readonly logger = new Logger(YandexDiskService.name);
   private doesFileUploading = false;
   private emitter = new EventEmitter();
-  lock = new AsyncLock({maxPending: 1});
-
-  constructor(private fileService: FileManagerService,
-              private configService: ConfigService) {
-  }
 
   /**
    * Метод проверяет существует ли папка с текущей датой на ЯндексДиске
    */
-  async isFolderYandexDisk(nameFolderOnYandexDisk: string): Promise<boolean> {
+  async isFolderExistStorage(nameFolderStorage: string, token?: string): Promise<boolean> {
     try {
-      await meta.get(this.configService.tokenYandexDisk, nameFolderOnYandexDisk);
+      await meta.get(token, nameFolderStorage);
     } catch (error) {
-      this.logger.log(`Method isFolderYandexDisk(): ${JSON.stringify(error)}. That's okay. I'll create a folder`);
+      this.logger.log(`Method isFolderExistStorage(): ${JSON.stringify(error)}. That's okay. I'll create a folder`);
       return false;
     }
     return true;
@@ -43,15 +38,13 @@ export class YandexDiskService {
 
   /**
    * Создать папку на ЯндексДиске
-   * @private
    */
-  private async createFolderYandexDisk(nameFolderOnYandexDisk: string): Promise<boolean> {
+  async createFolderStorage(nameFolderOnYandexDisk: string, token?: string) {
     try {
-      await resources.create(this.configService.tokenYandexDisk, `disk:/${nameFolderOnYandexDisk}`);
+      await resources.create(token, `disk:/${nameFolderOnYandexDisk}`);
     } catch (error) {
-      this.logger.error('Method createFolderYandexDisk(): ${JSON.stringify(error)}');
+      this.logger.error("Method createFolderStorage(): ${JSON.stringify(error)}");
     }
-    return true;
   }
 
   /**
@@ -63,14 +56,20 @@ export class YandexDiskService {
    */
   private async uploadFileToFolderYandexDisk(nameFIle: string,
                                              remotePath: string,
-                                             fileToUpload: string) {
+                                             fileToUpload: string,
+                                             token: string,
+                                             noEditPathNameFile: string):Promise<string> {
+
     if (this.doesFileUploading)
       await waitFor("done", this.emitter);
 
     this.doesFileUploading = true;
+
     this.logger.debug(`Uploading started. File = ${fileToUpload}`);
     try {
-      const { href, method } = await upload.link(this.configService.tokenYandexDisk, remotePath, true);
+
+
+      const { href, method } = await upload.link(token, remotePath, true);
       const fileStream = createReadStream(fileToUpload);
       const uploadStream = request({ ...parse(href), method });
 
@@ -86,25 +85,30 @@ export class YandexDiskService {
 
       await waitFor("done", this.emitter, () => {
         this.logger.debug(`Uploading ended. File =  ${fileToUpload}`);
-        this.logger.debug(`Start of the deleting. File ${fileToUpload}`);
-        this.fileService.deleteFile(fileToUpload);
-        this.logger.debug(`End of the deleting. File ${fileToUpload}`);
         this.doesFileUploading = false;
       });
+      return noEditPathNameFile
+
     } catch (error) {
-      this.logger.error(`Method uploadToFolderYandexDisk(): ${JSON.stringify(error)}`);
+      if (error.name === "DiskUploadTrafficLimitExceeded") {
+        this.doesFileUploading = false;
+        throw error;
+      }
       this.doesFileUploading = false;
+      this.logger.error(`Method uploadFileToFolderYandexDisk(): ${JSON.stringify(error)}`);
     }
   }
 
   /**
    * Метод использует Множество действий (Создание папки и отправку файла на ЯндексДиск)
    */
-  async uploadYandexDisk(pathFile: string, nameFolderOnYandexDisk: string) {
-    const isFolder = await this.isFolderYandexDisk(nameFolderOnYandexDisk);
+  async uploadFileToFolderStorage(pathFile: string,
+                                  nameFolderOnYandexDisk: string,
+                                  token?: string):Promise<string> {
+    const isFolder = await this.isFolderExistStorage(nameFolderOnYandexDisk, token);
 
     if (!isFolder) {
-      await this.createFolderYandexDisk(nameFolderOnYandexDisk);
+      await this.createFolderStorage(nameFolderOnYandexDisk, token);
     }
 
     const isZipFile: boolean = path.extname(pathFile) === ".zip";
@@ -118,8 +122,8 @@ export class YandexDiskService {
     const fileToUpload = pathFile;
     const remotePath = `disk:/${nameFolderOnYandexDisk}/${nameFileOnYaDisk}`;
 
-   await this.uploadFileToFolderYandexDisk(nameFileOnYaDisk, remotePath, fileToUpload);
-
+    const uploadedFilePath: string = await this.uploadFileToFolderYandexDisk(nameFileOnYaDisk, remotePath, fileToUpload, token, pathFile);
+    return uploadedFilePath
   }
-
 }
+

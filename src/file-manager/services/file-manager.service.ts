@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as dayjs from "dayjs";
 import { Dayjs } from "dayjs";
 import { fsync } from "fs";
+import { ConfigService } from "../../config/service/config.service";
 
 /**
  * Класс для редактирования и создания файлов с логами
@@ -80,8 +81,8 @@ export class FileManagerService {
   createFolder(path: string) {
     try {
       fs.mkdirSync(path);
-    }catch (error){
-      this.logger.error(`Method createFolder(): ${JSON.stringify(error)}`)
+    } catch (error) {
+      this.logger.error(`Method createFolder(): ${JSON.stringify(error)}`);
     }
   }
 
@@ -110,7 +111,19 @@ export class FileManagerService {
   deleteEmptyFolder(path: string) {
     fs.rmdir(path, (error) => {
       if (error)
-        this.logger.error(`Method deleteEmptyFolder(): ${error}`);
-    })
+        this.logger.error(`Method deleteEmptyFolder(): ${JSON.stringify(error)}`);
+    });
+  }
+
+  isFolderExist(nameFolder: string,TmpFolder:string):boolean {
+
+    try {
+      const files = fs.readdirSync(TmpFolder);
+      return files.includes(nameFolder);
+    }catch (error) {
+      this.logger.error(`Method isFolderExistInTmp(): ${JSON.stringify(error)}`);
+      return false
+    }
+
   }
 }

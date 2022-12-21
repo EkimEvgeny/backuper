@@ -2,9 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "../../config/service/config.service";
 import * as dayjs from "dayjs";
 import * as path from "path";
-// import { ChildProcess } from "child_process";
 import * as child_process from "child_process";
-import { ChildProcess } from "child_process";
 
 
 /**
@@ -37,11 +35,15 @@ export class DatabaseManagerService {
 
     const pathBackupDataBase = path.join(nameFolderTmp, path.basename(nameBackupWithDate));
 
-    const command = `\"${pathPgDump}\" -F c -d postgres://${username}:${password}@${address}:${port}/${database} > ${pathBackupDataBase}`
-    //todo
+    if(!(this.configService.existElementFromQueryPathFilesOnUpload(pathBackupDataBase))){
+      const command = `\"${pathPgDump}\" -F c -d postgres://${username}:${password}@${address}:${port}/${database} > ${pathBackupDataBase}`
 
-      let yourScripts = child_process.execSync(command,{timeout:10*1000})
-
+      try {
+        let yourScripts = child_process.execSync(command,{timeout:10*1000})
+      }catch (error){
+        this.logger.error(`Method backupDataBase(): ${error}`)
+      }
+    }
 
     return pathBackupDataBase
   }
